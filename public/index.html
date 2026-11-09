@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Video Compressor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #313338;
+    --bg-secondary: #2b2d31;
+    --bg-tertiary: #1e1f22;
+    --bg-input: #383a40;
+    --border: #3f4147;
+    --blurple: #5865f2;
+    --blurple-hover: #4752c4;
+    --text-primary: #f2f3f5;
+    --text-muted: #949ba4;
+    --text-faint: #6d6f78;
+    --green: #23a55a;
+    --green-bg: rgba(35, 165, 90, 0.1);
+    --red: #f23f42;
+    --red-bg: rgba(242, 63, 66, 0.1);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-family: "Lato", "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px calc(48px + env(safe-area-inset-bottom, 0px));
+    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 560px;
+    position: relative;
+  }
+
+  .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .header-titles {
+    flex: 1;
+  }
+  .page-title { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .page-subtitle { color: var(--text-muted); font-size: 14px; margin: 0; }
+
+  .lang-switch {
+    display: inline-flex;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px;
+    margin-left: 12px;
+  }
+  .lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .lang-btn.active {
+    background: var(--blurple);
+    color: #fff;
+  }
+
+  .embed-card {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--blurple);
+    border-radius: 4px;
+    padding: 20px;
+  }
+
+  #ffmpegWarning {
+    display: none;
+    margin-bottom: 16px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    color: #ffb3b3;
+    font-size: 13px;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 28px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: var(--bg-tertiary);
+  }
+  .drop-zone:hover { border-color: var(--text-faint); }
+  .drop-zone.dragover { border-color: var(--blurple); background: rgba(88, 101, 242, 0.08); }
+  .drop-zone input { display: none; }
+  .drop-zone .icon { font-size: 28px; margin-bottom: 6px; }
+  .drop-zone .hint { color: var(--text-muted); font-size: 13px; }
+  .file-name {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #7c8aff;
+    word-break: break-all;
+  }
+
+  /* Preview video vừa import */
+  .preview-wrap {
+    display: none;
+    margin-top: 14px;
+    width: 100%;
+    max-height: min(50vh, 360px);
+    background: #000;
+    border-radius: 6px;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+  }
+  .preview-wrap video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: min(50vh, 360px);
+    object-fit: contain;
+  }
+
+  label.field-label {
+    display: block;
+    margin: 20px 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="number"]:focus { border-color: var(--blurple); }
+
+  button#runBtn {
+    width: 100%;
+    margin-top: 22px;
+    padding: 13px;
+    border: none;
+    border-radius: 4px;
+    background: var(--blurple);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button#runBtn:disabled { background: var(--bg-input); color: var(--text-faint); cursor: not-allowed; }
+  button#runBtn:not(:disabled):hover { background: var(--blurple-hover); }
+  button#runBtn:not(:disabled):active { background: var(--blurple-hover); transform: scale(0.99); }
+
+  #progressWrap { display: none; margin-top: 22px; }
+  .progress-bar-outer {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    width: 0%;
+    background: var(--blurple);
+    transition: width 0.3s;
+  }
+  .progress-label {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: "Consolas", monospace;
+  }
+
+  #log {
+    margin-top: 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    font-family: "Consolas", "SFMono-Regular", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #b5bac1;
+  }
+
+  #result {
+    display: none;
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--green-bg);
+    border-left: 4px solid var(--green);
+    border-radius: 4px;
+  }
+  #result .title { color: #4fd88a; font-weight: 600; font-size: 14px; text-align: center; }
+
+  .result-video-wrap {
+    margin-top: 12px;
+    width: 100%;
+    max-height: min(50vh, 360px);
+    background: #000;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .result-video-wrap video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: min(50vh, 360px);
+    object-fit: contain;
+  }
+
+  .stat-grid {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .stat-box {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    min-width: 0;
+  }
+  .stat-box .stat-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+  }
+  .stat-box .stat-value {
+    margin-top: 2px;
+    font-size: 13px;
+    font-family: "Consolas", monospace;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-box .stat-value.highlight { color: #4fd88a; }
+
+  #downloadLink {
+    display: block;
+    text-align: center;
+    margin-top: 14px;
+    background: var(--green);
+    color: #06200f;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 12px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  #downloadLink:hover { filter: brightness(1.08); }
+  #downloadLink:active { transform: scale(0.99); }
+
+  #errorBox {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 4px;
+    background: var(--red-bg);
+    border-left: 4px solid var(--red);
+    color: #ffb3b3;
+    font-size: 13px;
+    word-break: break-word;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  @media (max-width: 480px) {
+    body { padding: 20px 10px calc(20px + env(safe-area-inset-bottom, 0px)); }
+    .embed-card { padding: 14px; border-radius: 0; border-left: none; border-top: 4px solid var(--blurple); }
+    .header-bar { margin-bottom: 16px; }
+    .page-title { font-size: 18px; }
+    .page-subtitle { font-size: 13px; }
+    .drop-zone { padding: 20px 10px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .result-video-wrap, .result-video-wrap video,
+    .preview-wrap, .preview-wrap video { max-height: 45vh; }
+  }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="header-bar">
+      <div class="header-titles">
+        <div class="page-title">🎬 Video Compressor</div>
+        <div class="page-subtitle" data-i18n="subtitle">Nén video mượt qua FFmpeg.</div>
+      </div>
+      <div class="lang-switch">
+        <button type="button" class="lang-btn active" id="btnVi">VI</button>
+        <button type="button" class="lang-btn" id="btnEn">EN</button>
+      </div>
+    </div>
+
+    <div class="embed-card">
+      <div id="ffmpegWarning"></div>
+
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📁</div>
+        <div class="hint" data-i18n="dropHint">Kéo thả file MP4 vào đây, hoặc bấm để chọn file</div>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" id="fileInput" accept="video/*" />
+      </div>
+
+      <div class="preview-wrap" id="previewWrap">
+        <video id="previewVideo" controls playsinline muted preload="metadata"></video>
+      </div>
+
+      <label class="field-label" for="passes" data-i18n="passesLabel">Số lần nén (1–100)</label>
+      <input type="number" id="passes" min="1" max="100" value="5" inputmode="numeric" />
+
+      <button id="runBtn" disabled data-i18n="runBtn">Bắt đầu nén</button>
+
+      <div id="progressWrap">
+        <div class="progress-bar-outer"><div class="progress-bar-inner" id="progressInner"></div></div>
+        <div class="progress-label" id="progressLabel" data-i18n="preparing">Đang chuẩn bị...</div>
+        <div id="log"></div>
+      </div>
+
+      <div id="result">
+        <div class="title" data-i18n="resultTitle">✅ Nén xong!</div>
+
+        <div class="result-video-wrap">
+          <video id="resultVideo" controls playsinline muted></video>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="statSize">Dung lượng</div>
+            <div class="stat-value highlight" id="statSize">–</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="statSaved">Giảm được</div>
+            <div class="stat-value highlight" id="statSaved">–</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="statResolution">Độ phân giải</div>
+            <div class="stat-value" id="statResolution">–</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="statFps">FPS</div>
+            <div class="stat-value" id="statFps">–</div>
+          </div>
+          <div class="stat-box" style="grid-column: 1 / -1;">
+            <div class="stat-label" data-i18n="statDuration">Thời lượng</div>
+            <div class="stat-value" id="statDuration">–</div>
+          </div>
+        </div>
+
+        <a id="downloadLink" href="#" download data-i18n="downloadLink">⬇️ Tải video đã nén</a>
+      </div>
+
+      <div id="errorBox"></div>
+    </div>
+  </div>
+
+<script>
+  const translations = {
+    vi: {
+      subtitle: 'Nén video mượt qua FFmpeg',
+      dropHint: 'Kéo thả file .mp4 vào đây hoặc bấm để chọn file',
+      selectedFile: 'Đã chọn: {name} ({size} MB)',
+      passesLabel: 'Mức nén (1–100)',
+      runBtn: 'Bắt đầu nén',
+      preparing: 'Đang chuẩn bị...',
+      passLabel: 'Lượt {current}/{total} ({pct}%)',
+      resultTitle: '✅ Nén xong!',
+      statSize: 'Dung lượng',
+      statSaved: 'Giảm được',
+      statResolution: 'Độ phân giải',
+      statFps: 'FPS',
+      statDuration: 'Thời lượng',
+      downloadLink: '⬇️ Tải video đã nén',
+      errFfmpegMissing: '❌ Không tìm thấy FFmpeg. Hãy cài FFmpeg và thêm vào PATH trước khi chạy.',
+      errFfprobeMissing: 'Cảnh báo: Không tìm thấy ffprobe, vẫn nén được nhưng sẽ khá bất tiện.',
+      errUnknown: 'Lỗi không xác định',
+      errWsConnection: 'Mất kết nối realtime tới server. Thử tải lại trang và thử lại.',
+      errCompression: 'Đã xảy ra lỗi khi nén video.',
+      errPrefix: '[Lỗi] '
+    },
+    en: {
+      subtitle: 'Compress videos smoothly using FFmpeg',
+      dropHint: 'Drag and drop an MP4 file here or click to browse',
+      selectedFile: 'Selected: {name} ({size} MB)',
+      passesLabel: 'Compression level (1–100)',
+      runBtn: 'Start Compression',
+      preparing: 'Preparing...',
+      passLabel: 'Pass {current}/{total} ({pct}%)',
+      resultTitle: '✅ Compression Complete!',
+      statSize: 'File Size',
+      statSaved: 'Reduced By',
+      statResolution: 'Resolution',
+      statFps: 'FPS',
+      statDuration: 'Duration',
+      downloadLink: 'Download Compressed Video',
+      errFfmpegMissing: '⚠️ FFmpeg not found on this system. Install FFmpeg and add it to ffmpeg folder before running.',
+      errFfprobeMissing: '⚠️ ffprobe not found — compression will still work, but quite inconvenient',
+      errUnknown: 'Unknown error',
+      errWsConnection: 'Lost real-time connection to server. Please reload the page and try again.',
+      errCompression: 'An error occurred during video compression.',
+      errPrefix: '[Error] '
+    }
+  };
+
+  let currentLang = localStorage.getItem('lang') || 'vi';
+
+  function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    document.documentElement.lang = lang;
+
+    document.getElementById('btnVi').classList.toggle('active', lang === 'vi');
+    document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+
+    const elements = document.querySelectorAll('[data-i18n]');
+    elements.forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (translations[lang] && translations[lang][key]) {
+        el.textContent = translations[lang][key];
+      }
+    });
+
+    if (selectedFile) {
+      updateFileNameDisplay();
+    }
+
+    if (lastJobState) {
+      renderJob(lastJobState);
+    }
+  }
+
+  document.getElementById('btnVi').addEventListener('click', () => setLanguage('vi'));
+  document.getElementById('btnEn').addEventListener('click', () => setLanguage('en'));
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileNameEl = document.getElementById('fileName');
+  const runBtn = document.getElementById('runBtn');
+  const passesInput = document.getElementById('passes');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressInner = document.getElementById('progressInner');
+  const progressLabel = document.getElementById('progressLabel');
+  const logEl = document.getElementById('log');
+  const resultEl = document.getElementById('result');
+  const downloadLink = document.getElementById('downloadLink');
+  const errorBox = document.getElementById('errorBox');
+  const ffmpegWarning = document.getElementById('ffmpegWarning');
+  const resultVideo = document.getElementById('resultVideo');
+
+  const previewWrap = document.getElementById('previewWrap');
+  const previewVideo = document.getElementById('previewVideo');
+  let previewUrl = null;
+
+  // Nếu trình duyệt không phát được codec (vd: HEVC trên một số máy) thì ẩn khung preview
+  previewVideo.addEventListener('error', () => {
+    previewWrap.style.display = 'none';
+  });
+
+  const statSize = document.getElementById('statSize');
+  const statSaved = document.getElementById('statSaved');
+  const statResolution = document.getElementById('statResolution');
+  const statFps = document.getElementById('statFps');
+  const statDuration = document.getElementById('statDuration');
+
+  let selectedFile = null;
+  let currentSocket = null;
+  let lastJobState = null;
+  let ffmpegStatusData = null;
+
+  fetch('/api/check-font')
+    .then((r) => r.json())
+    .then((data) => {
+      if (!data.available) return;
+      const styleEl = document.createElement('style');
+      styleEl.textContent = `
+        @font-face {
+          font-family: 'CustomFont';
+          src: url('${data.url}') format('${data.format}');
+          font-display: swap;
+        }
+      `;
+      document.head.appendChild(styleEl);
+      document.body.style.fontFamily =
+        "'CustomFont', 'Lato', 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+    })
+    .catch(() => {});
+
+  fetch('/api/check-ffmpeg')
+    .then((r) => r.json())
+    .then((data) => {
+      ffmpegStatusData = data;
+      updateFFmpegWarning();
+    })
+    .catch(() => {});
+
+  function updateFFmpegWarning() {
+    if (!ffmpegStatusData) return;
+    const t = translations[currentLang];
+    if (!ffmpegStatusData.ok) {
+      ffmpegWarning.textContent = t.errFfmpegMissing;
+      ffmpegWarning.style.display = 'block';
+    } else if (!ffmpegStatusData.ffprobeOk) {
+      ffmpegWarning.textContent = t.errFfprobeMissing;
+      ffmpegWarning.style.display = 'block';
+    }
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === null || bytes === undefined) return '–';
+    const mb = bytes / (1024 * 1024);
+    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
+  }
+
+  function formatDuration(sec) {
+    if (sec === null || sec === undefined) return '–';
+    const m = Math.floor(sec / 60);
+    const s = Math.round(sec % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) setFile(fileInput.files[0]);
+  });
+
+  function updateFileNameDisplay() {
+    if (!selectedFile) return;
+    const t = translations[currentLang];
+    const sizeMb = (selectedFile.size / 1024 / 1024).toFixed(1);
+    fileNameEl.textContent = t.selectedFile.replace('{name}', selectedFile.name).replace('{size}', sizeMb);
+  }
+
+  function setFile(file) {
+    selectedFile = file;
+    updateFileNameDisplay();
+    runBtn.disabled = false;
+
+    // Preview video vừa chọn (giải phóng URL cũ để tránh tốn bộ nhớ)
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    previewVideo.src = previewUrl;
+    previewWrap.style.display = 'flex';
+
+    resultEl.style.display = 'none';
+    errorBox.style.display = 'none';
+    progressWrap.style.display = 'none';
+    lastJobState = null;
+  }
+
+  runBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    resultEl.style.display = 'none';
+    errorBox.style.display = 'none';
+    logEl.textContent = '';
+    progressInner.style.width = '0%';
+    progressWrap.style.display = 'block';
+    runBtn.disabled = true;
+    lastJobState = null;
+
+    const passes = Math.max(1, Math.min(100, parseInt(passesInput.value, 10) || 1));
+    const formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('passes', passes);
+
+    try {
+      const res = await fetch('/api/compress', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || translations[currentLang].errUnknown);
+      connectSocket(data.jobId);
+    } catch (err) {
+      showError(err.message);
+      runBtn.disabled = false;
+    }
+  });
+
+  function connectSocket(jobId) {
+    if (currentSocket) currentSocket.close();
+
+    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    const socket = new WebSocket(`${protocol}://${location.host}/ws?jobId=${jobId}`);
+    currentSocket = socket;
+
+    socket.addEventListener('message', (event) => {
+      const job = JSON.parse(event.data);
+      if (job.error && !job.status) {
+        showError(job.error);
+        runBtn.disabled = false;
+        socket.close();
+        return;
+      }
+
+      renderJob(job);
+
+      if (job.status === 'done' || job.status === 'error') {
+        socket.close();
+      }
+    });
+
+    socket.addEventListener('close', () => {
+      if (currentSocket === socket) currentSocket = null;
+    });
+
+    socket.addEventListener('error', () => {
+      showError(translations[currentLang].errWsConnection);
+      runBtn.disabled = false;
+    });
+  }
+
+  function renderJob(job) {
+    lastJobState = job;
+    const t = translations[currentLang];
+
+    const passFraction = job.currentPassProgress || 0;
+    const overall = job.passes
+      ? ((Math.max(0, job.currentPass - 1) + passFraction) / job.passes) * 100
+      : 0;
+    const pct = Math.min(100, Math.round(overall));
+
+    progressInner.style.width = `${pct}%`;
+    progressLabel.textContent = t.passLabel
+      .replace('{current}', job.currentPass)
+      .replace('{total}', job.passes)
+      .replace('{pct}', pct);
+
+    logEl.textContent = job.log.join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+
+    if (job.status === 'done') {
+      progressInner.style.width = '100%';
+      resultEl.style.display = 'block';
+
+      const outputUrl = `/outputs/${encodeURIComponent(job.outputFile)}`;
+      resultVideo.src = outputUrl;
+      downloadLink.href = outputUrl;
+      downloadLink.setAttribute('download', job.outputFile);
+
+      statSize.textContent = formatBytes(job.finalSize);
+      statSaved.textContent = job.savedPercent !== null && job.savedPercent !== undefined
+        ? `${job.savedPercent}%`
+        : '–';
+
+      const info = job.videoInfo;
+      statResolution.textContent = info && info.width && info.height ? `${info.width}×${info.height}` : '–';
+      statFps.textContent = info && info.fps ? `${info.fps} fps` : '–';
+      statDuration.textContent = info && info.duration ? formatDuration(info.duration) : '–';
+
+      runBtn.disabled = false;
+    } else if (job.status === 'error') {
+      showError(job.error || t.errCompression);
+      runBtn.disabled = false;
+    }
+
+    updateFFmpegWarning();
+  }
+
+  function showError(msg) {
+    const t = translations[currentLang];
+    errorBox.style.display = 'block';
+    errorBox.textContent = `${t.errPrefix}${msg}`;
+  }
+
+  setLanguage(currentLang);
+</script>
+</body>
+</html>
