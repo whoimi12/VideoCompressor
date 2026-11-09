@@ -27,7 +27,7 @@
      ```bash
      bash start.sh
      ```
-
+* **Tips: Về sau chỉ cần gõ lệnh node server.js trong path để chạy server.**
 ## 📂 Cấu trúc thư mục dự án
 * `uploads/`: Chứa các video gốc tải lên để chuẩn bị nén.
 * `temp/`: Chứa các tệp tin tạm thời trong quá trình xử lý.
