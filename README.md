@@ -2,7 +2,7 @@
 
 **VideoCompressor** là một ứng dụng có giao diện trực quan giúp nén video nhiều lần thông qua FFmpeg. Hỗ trợ đa nền tảng.
 
-## ✨ Tính năng nổi bật
+## Tính năng nổi bật
 * **Nén nhiều lần:** Cho phép tối ưu dung lượng video qua nhiều lượt nén.
 * **Giao diện trực quan:** Thao tác dễ dàng, thân thiện với người dùng.
 * **Đa nền tảng:** Sử dụng mượt mà trên Windows, Linux, Android, MacOS,...
@@ -12,7 +12,7 @@
 * **Node.js** (đã cài đặt trên máy)
 * **FFmpeg** (đã được cấu hình trong biến môi trường hệ thống)
 
-## 🚀 Hướng dẫn cài đặt và chạy
+## Hướng dẫn cài đặt và chạy
 
 1. **Tải mã nguồn về máy:**
    ```bash
@@ -28,10 +28,7 @@
      bash start.sh
      ```
 * **Tips: Về sau chỉ cần gõ lệnh node server.js trong path để chạy server.**
-## 📂 Cấu trúc thư mục dự án
+## Cấu trúc thư mục dự án
 * `uploads/`: Chứa các video gốc tải lên để chuẩn bị nén.
 * `temp/`: Chứa các tệp tin tạm thời trong quá trình xử lý.
 * `outputs/`: Nơi lưu trữ video sau khi đã nén thành công.
-
-## 📄 Giấy phép
-Dự án này được phát hành dưới bản quyền **MIT License**.
