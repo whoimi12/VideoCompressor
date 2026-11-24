@@ -8,7 +8,7 @@
 * **Đa nền tảng:** Sử dụng mượt mà trên Windows, Linux, Android, MacOS,...
 * **Sức mạnh FFmpeg:** Đảm bảo chất lượng video và tốc độ xử lý tối ưu. (Tốc độ xử lý phụ thuộc vào phần cứng)
 
-## 🛠️ Yêu cầu hệ thống
+## Yêu cầu hệ thống
 * **Node.js** (đã cài đặt trên máy)
 * **FFmpeg** (đã được cấu hình trong biến môi trường hệ thống)
 
