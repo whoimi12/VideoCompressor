@@ -34,6 +34,11 @@ else
     echo "Hãy mở trình duyệt và truy cập: http://localhost:3000"
 fi
 
+if command -v termux-wake-lock >/dev/null 2>&1; then
+    termux-wake-lock
+    trap 'termux-wake-unlock' EXIT
+fi
+
 node server.js
 
 read -p "Nhấn Enter để thoát..."
