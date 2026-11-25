@@ -10,6 +10,11 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 const PORT = process.env.PORT || 3000;
+server.requestTimeout = 0;
+server.headersTimeout = 0;
+server.timeout = 0;
+process.on('uncaughtException', (err) => console.error('[uncaughtException]', err));
+process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err));
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const OUTPUT_DIR = path.join(__dirname, 'outputs');
 const TEMP_DIR = path.join(__dirname, 'temp');
@@ -37,6 +42,7 @@ return res.json({ available: true, url: `/fonts/${candidate.file}`, format: cand
 }
 res.json({ available: false });
 });
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
 const jobs = {};
 const subscribers = {};
 const lastBroadcastAt = {};
@@ -143,7 +149,15 @@ for (const ws of subs) {
 if (ws.readyState === WebSocket.OPEN) ws.send(payload);
 }
 }
-app.post('/api/compress', upload.single('video'), (req, res) => {
+app.post('/api/compress', (req, res, next) => {
+  upload.single('video')(req, res, (err) => {
+    if (err) {
+      console.error('[upload]', err.message);
+      return res.status(500).json({ error: 'Upload lỗi: ' + err.message });
+    }
+    next();
+  });
+}, (req, res) => {
 if (!req.file) {
 return res.status(400).json({ error: 'Không có file được tải lên.' });
 }
@@ -284,8 +298,9 @@ function runFfmpegPass(input, output, durationSec, onProgress, applyDenoise = fa
     const proc = spawn('ffmpeg', args);
     let stderr = '';
     let buffer = '';
-    if (durationSec) {
+    {
       proc.stdout.on('data', (data) => {
+        if (!durationSec) return;
         buffer += data.toString();
         const lines = buffer.split('\n');
         buffer = lines.pop();
